@@ -1,0 +1,17 @@
+login:
+  username_input: "id:username"
+  password_input: "id:password"
+  submit_btn: "xpath://button[@type='submit']"
+  alert_error: "css:.alert-danger"
+
+orders:
+  order_modal_btn: "xpath://button[contains(text(),'OK') or contains(text(),'I guess so...')]"
+  head_select: "id:head"
+  body_radio: "id:id-body-{body_id}"
+  legs_input: "xpath://input[@placeholder='Enter the part number for the legs']"
+  address_input: "id:address"
+  preview_btn: "id:preview"
+  order_btn: "id:order"
+  order_another_btn: "id:order-another"
+  receipt_div: "id:receipt"
+  robot_preview_img: "id:robot-preview-image"

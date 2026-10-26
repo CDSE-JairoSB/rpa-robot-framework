@@ -1,0 +1,60 @@
+# Robot Framework Execution Artifacts
+output.xml
+log.html
+report.html
+results/
+*.log
+
+# Data Directories (Exclude runtime & transactional data)
+data/input/*
+!data/input/.gitkeep
+data/output/*
+!data/output/.gitkeep
+data/temp/*
+!data/temp/.gitkeep
+
+# Python Artifacts & Virtual Environments
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+.venv/
+ENV/
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Local overrides (never commit machine-specific config)
+config/*.local.yaml
+.env
+.env.*
+!.env.example
+
+# Local agent tooling
+.agents/
+
+# IDE & OS Specific
+.idea/
+.vscode/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+
+# graphify-axet
+.graphify/

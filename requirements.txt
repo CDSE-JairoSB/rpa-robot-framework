@@ -1,0 +1,19 @@
+# Core Robot Framework & RPA Libraries
+robotframework>=7.0.0
+rpaframework>=28.0.0
+
+# Parallel Execution
+robotframework-pabot>=2.18.0
+
+# API & Networking
+robotframework-requests>=0.9.7
+requests>=2.31.0
+
+# Configuration & Data Handling
+pyyaml>=6.0.1
+openpyxl>=3.1.2
+pandas>=2.2.0
+
+# Code Quality & Standards (Linter & Formatter)
+robotframework-robocop>=5.0.0
+robotframework-tidy>=4.11.0

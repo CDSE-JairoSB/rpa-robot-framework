@@ -1,0 +1,16 @@
+wishlist:
+  page_ready: "css:body"
+  item_cards: "css:li.g-item-sortable, div.g-item-sortable, [data-itemid]"
+  item_title: "css:h2 a, h3 a, a[id*='itemName'], a.a-link-normal"
+  item_link: "css:h2 a, h3 a, a[id*='itemName'], a.a-link-normal"
+  item_price: "css:.a-price .a-offscreen, .itemPrice, [data-testid='price']"
+  item_availability: "css:.a-color-price, .a-color-success, .a-color-secondary, .itemAvailability"
+  next_page: "css:li.a-last:not(.a-disabled) a, a[aria-label='Siguiente']"
+
+authentication:
+  login_form: "css:#ap_email, input[type='email'], input[name='email']"
+  captcha: "css:#captchacharacters, form[action*='validateCaptcha']"
+
+errors:
+  robot_check: "css:form[action*='validateCaptcha'], #captchacharacters"
+  page_error: "css:#g-page-error, .a-alert-error"

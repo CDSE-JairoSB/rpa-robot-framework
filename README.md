@@ -75,13 +75,19 @@ pip install -r requirements.txt
 
 ### Parámetros locales (no versionar)
 
-Las URLs de wishlist, rutas de perfil de Chrome y cualquier dato de sesión se inyectan en ejecución. No van en YAML ni en archivos `.robot`.
+Las URLs de wishlist, rutas de perfil de Chrome y cualquier dato de sesión **no se versionan**. El robot las resuelve en este orden:
+
+1. `--variable` en la CLI
+2. Variables de entorno
+3. `config/local.yaml` (copiar desde `config/local.yaml.example`)
+4. Perfil Chrome por defecto del usuario (`~/Library/Application Support/Google/Chrome/Default`)
+5. Diálogo interactivo si aún falta la URL
 
 ```bash
-robot --outputdir results \
-  --variable 'AMAZON_WISHLIST_URL:<URL_AUTORIZADA>' \
-  --variable 'AMAZON_CHROME_USER_DATA_DIR:<RUTA_DEL_PERFIL>' \
-  tasks/main_process.robot
+cp config/local.yaml.example config/local.yaml
+# editar wishlist_url en config/local.yaml
+
+robot --outputdir results tasks/amazon/wishlist_amazon_price_updater.robot
 ```
 
 ### Ejecución Básica (Entorno por defecto: `dev`)

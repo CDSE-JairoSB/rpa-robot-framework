@@ -7,6 +7,7 @@ Library             OperatingSystem
 Library             String
 Library             DateTime
 Library             Process
+Library             Dialogs
 
 # Librerías Especializadas RPA (rpaframework)
 Library             RPA.Browser.Selenium

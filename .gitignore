@@ -40,7 +40,9 @@ wheels/
 *.egg
 
 # Local overrides (never commit machine-specific config)
+config/local.yaml
 config/*.local.yaml
+!config/local.yaml.example
 .env
 .env.*
 !.env.example

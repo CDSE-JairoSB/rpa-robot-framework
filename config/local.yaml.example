@@ -1,0 +1,7 @@
+# Copiar a config/local.yaml (ese archivo está en .gitignore).
+# No versionar URLs de wishlist, rutas de perfil ni datos de sesión.
+
+amazon:
+  wishlist_url: ""
+  chrome_profile_path: ""
+  chrome_profile_name: "Default"

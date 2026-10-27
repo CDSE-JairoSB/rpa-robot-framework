@@ -7,6 +7,7 @@ ${LOCATORS}                      ${None}
 # Parámetros inyectables de ejecución; no persistir enlaces de invitación, credenciales ni cookies.
 ${AMAZON_WISHLIST_URL}           ${EMPTY}
 ${AMAZON_CHROME_USER_DATA_DIR}   ${EMPTY}
+${AMAZON_CHROME_PROFILE_NAME}    Default
 ${AMAZON_CHROME_DEBUG_PORT}      ${EMPTY}
 
 # Rutas estándar del proyecto

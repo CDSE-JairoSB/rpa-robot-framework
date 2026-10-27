@@ -2,19 +2,17 @@
 Documentation       Actualiza la nota de cada artículo de la Wishlist Amazon con su precio visible.
 Resource            ../../resources/common/settings.resource
 Resource            ../../keywords/common/system/browser_keywords.resource
+Resource            ../../keywords/common/system/runtime_config.resource
 
-Suite Setup         Abrir Sitio Con Perfil 4
+Suite Setup         Preparar Sesion Amazon Wishlist
 Suite Teardown      Cerrar Sesion Del Navegador
 
 *** Variables ***
-${SAMPLE_URL}           ${AMAZON_WISHLIST_URL}
 ${PAGE_HEADING}         id=profile-list-name
 ${ITEM_PRICE}           xpath=//span[contains(@class, 'a-price') and contains(@id, 'itemPrice_')]
 ${ADD_NOTE}             xpath=//a[contains(normalize-space(.), 'Agrega una nota')]
 ${NOTE_BOX}             id=WLNOTES_Comment
 ${SAVE_NOTE}            xpath=//*[@id='WLNOTES_save']//input[@type='submit']
-${CHROME_PROFILE_PATH}  ${AMAZON_CHROME_USER_DATA_DIR}
-${CHROME_PROFILE_NAME}  Default
 ${EXPECTED_HEADING}      Grosery
 ${BROWSER_TIMEOUT}       20
 ${SCROLL_PAUSE}          2 seconds
@@ -32,23 +30,31 @@ Actualizar Notas De Precios De Wishlist
     Log    Total de items cargados: ${total_items}    level=INFO
     ${updated_items}=    Set Variable    0
     FOR    ${item}    IN    @{items}
-        ${was_updated}=    Actualizar Nota Solo Si El Precio Es Menor    ${item}
-        IF    ${was_updated}
-            ${updated_items}=    Evaluate    ${updated_items} + 1
+        TRY
+            ${was_updated}=    Actualizar Nota Solo Si El Precio Es Menor    ${item}
+            IF    ${was_updated}
+                ${updated_items}=    Evaluate    ${updated_items} + 1
+            END
+        EXCEPT    AS    ${error}
+            Log To Console    Error aislado en artículo: ${error}
+            Log    [SYSTEM_EXCEPTION] Artículo omitido: ${error}    level=ERROR
         END
     END
     Log To Console    Proceso finalizado. Notas actualizadas: ${updated_items}
     Log    Proceso finalizado. Notas actualizadas: ${updated_items}    level=INFO
 
 *** Keywords ***
-Abrir Sitio Con Perfil 4
-    [Documentation]    Crea una copia temporal del perfil Chrome inyectado y abre la Wishlist.
-    Should Not Be Empty    ${SAMPLE_URL}    msg=Defina AMAZON_WISHLIST_URL en la ejecución; no se versiona.
-    Should Not Be Empty    ${CHROME_PROFILE_PATH}    msg=Defina AMAZON_CHROME_USER_DATA_DIR en la ejecución; no se versiona.
+Preparar Sesion Amazon Wishlist
+    [Documentation]    Resuelve URL/perfil locales y abre Chrome con una copia temporal del perfil.
+    Resolver Parametros Locales Amazon
+    Abrir Wishlist Con Perfil Autorizado
+
+Abrir Wishlist Con Perfil Autorizado
+    [Documentation]    Crea una copia temporal del perfil Chrome resuelto y abre la Wishlist.
     Inicializar Navegador Con Copia Temporal De Perfil
-    ...    ${SAMPLE_URL}
-    ...    ${CHROME_PROFILE_PATH}
-    ...    profile_name=${CHROME_PROFILE_NAME}
+    ...    ${AMAZON_WISHLIST_URL}
+    ...    ${AMAZON_CHROME_USER_DATA_DIR}
+    ...    profile_name=${AMAZON_CHROME_PROFILE_NAME}
     ...    timeout=${BROWSER_TIMEOUT}
 
 Confirmar Acceso A Wishlist
@@ -135,7 +141,10 @@ Actualizar Nota Solo Si El Precio Es Menor
     RETURN    ${False}
 
 Convertir Precio A Numero
-    [Documentation]    Convierte un importe con símbolo monetario y separadores a número decimal.
+    [Documentation]    Convierte un importe Amazon MXN/USD a número decimal.
     [Arguments]    ${price}
-    ${number}=    Evaluate    float(re.sub(r'[^0-9.]', '', $price))    modules=re
+    ${normalized}=    Normalize Amazon Price    ${price}
+    ${number_text}=    Get From Dictionary    ${normalized}    price
+    Should Not Be Empty    ${number_text}    msg=No se pudo normalizar el precio: ${price}
+    ${number}=    Convert To Number    ${number_text}
     RETURN    ${number}

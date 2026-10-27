@@ -1,27 +1,5 @@
-environment: dev
-
 amazon:
-  marketplace: "amazon.com.mx"
-  base_url: "https://www.amazon.com.mx"
-  # Inject at runtime: --variable AMAZON_WISHLIST_URL:<url>
-  wishlist_url: ""
   timeout_seconds: 20
-  headless: false
-  browser: "chrome"
-  chrome_profile_name: "Default"
-  # Definir la ruta mediante AMAZON_CHROME_USER_DATA_DIR; no se almacenan cookies aquí.
-  use_existing_chrome_profile: true
-
-retry:
-  max_attempts: 2
-  delay_seconds: 2
 
 paths:
-  input_dir: "data/input"
-  output_dir: "data/output"
-  temp_dir: "data/temp"
   price_history_file: "data/output/amazon_wishlist_price_history.csv"
-
-notifications:
-  enabled: false
-  recipients: []

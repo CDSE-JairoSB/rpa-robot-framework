@@ -12,6 +12,8 @@ data/output/*
 !data/output/.gitkeep
 data/temp/*
 !data/temp/.gitkeep
+data/chrome-profile/*
+!data/chrome-profile/.gitkeep
 
 # Python Artifacts & Virtual Environments
 __pycache__/

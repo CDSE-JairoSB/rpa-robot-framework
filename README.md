@@ -80,8 +80,15 @@ Las URLs de wishlist, rutas de perfil de Chrome y cualquier dato de sesión **no
 1. `--variable` en la CLI
 2. Variables de entorno
 3. `config/local.yaml` (copiar desde `config/local.yaml.example`)
-4. Perfil Chrome por defecto del usuario (`~/Library/Application Support/Google/Chrome/Default`)
+4. Perfil local `data/chrome-profile/Default` si existe; si no, el perfil de Chrome de macOS (solo si macOS permite leerlo)
 5. Diálogo interactivo si aún falta la URL
+
+macOS puede bloquear `~/Library/Application Support/Google/Chrome` (TCC). Si aparece `Operation not permitted` sobre `Local State`, ejecuta el robot desde **Terminal.app** o siembra una copia local:
+
+```bash
+# En Terminal.app, con Chrome cerrado
+./scripts/seed_chrome_profile.sh
+```
 
 ```bash
 cp config/local.yaml.example config/local.yaml

@@ -19,22 +19,9 @@ Inicializar Navegador Con Copia Temporal De Perfil
     [Arguments]    ${url}    ${profile_path}    ${profile_name}=Default    ${timeout}=20
     Should Not Be Empty    ${profile_path}    msg=Provide the Chrome profile directory to copy.
     Directory Should Exist    ${profile_path}
-    ${parent_path}    ${path_tail}=    Split Path    ${profile_path}
-    Should Be Equal    ${path_tail}    ${profile_name}    msg=The profile path must end with the configured profile name.
-    ${source_root}=    Set Variable    ${parent_path}
-    ${source_local_state}=    Set Variable    ${source_root}${/}Local State
-    ${source_profile}=    Set Variable    ${source_root}${/}${profile_name}
-    File Should Exist    ${source_local_state}
-    Directory Should Exist    ${source_profile}
-    ${source_lock}=    Set Variable    ${source_root}${/}SingletonLock
-    File Should Not Exist
-    ...    ${source_lock}
-    ...    msg=[SYSTEM_EXCEPTION] The source Chrome profile is in use. Close all Google Chrome windows before running the sample.
     ${timestamp}=    Get Current Date    result_format=%Y%m%d_%H%M%S
     ${temporary_root}=    Set Variable    ${TEMP_DIR}${/}chrome_profile_${profile_name}_${timestamp}
-    OperatingSystem.Create Directory    ${temporary_root}
-    OperatingSystem.Copy File    ${source_local_state}    ${temporary_root}${/}Local State
-    OperatingSystem.Copy Directory    ${source_profile}    ${temporary_root}${/}${profile_name}
+    Copy Chrome User Data    ${profile_path}    ${profile_name}    ${temporary_root}
     Set Suite Variable    ${TEMPORARY_CHROME_PROFILE_ROOT}    ${temporary_root}
     ${debug_port}=    Set Variable    9223
     ${chrome_process}=    Start Process

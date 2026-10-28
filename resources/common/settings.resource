@@ -19,6 +19,8 @@ Library             RPA.PDF
 # Librerías Personalizadas Python
 Library             ../../libraries/DataProcessor.py
 Library             ../../libraries/PriceTracker.py
+Library             ../../libraries/PriceRepository.py
+Library             ../../libraries/TelegramNotifier.py
 
 # Variables Globales
 Resource            variables/global_variables.resource

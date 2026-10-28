@@ -3,17 +3,69 @@
 from __future__ import annotations
 
 import csv
+import json
 import os
 import re
 from datetime import datetime, timezone
 from decimal import Decimal, InvalidOperation
 from typing import Any, Dict, Iterable, List, Optional
 
+STATUS_OK_UPDATED = "OK_UPDATED"
+STATUS_PRICE_UNCHANGED = "PRICE_UNCHANGED"
+STATUS_NEEDS_2FA = "STATUS_NEEDS_2FA"
+STATUS_RATE_LIMITED = "RATE_LIMITED"
+STATUS_ERROR_SELECTOR = "ERROR_SELECTOR"
+
+STATUS_CODES = {
+    STATUS_OK_UPDATED,
+    STATUS_PRICE_UNCHANGED,
+    STATUS_NEEDS_2FA,
+    STATUS_RATE_LIMITED,
+    STATUS_ERROR_SELECTOR,
+}
+
 
 class PriceTracker:
-    """Expone keywords Robot Framework para históricos CSV de precios."""
+    """Expone keywords Robot Framework para históricos CSV de precios y señales de estado."""
 
     ROBOT_LIBRARY_SCOPE = "GLOBAL"
+
+    STATUS_OK_UPDATED = STATUS_OK_UPDATED
+    STATUS_PRICE_UNCHANGED = STATUS_PRICE_UNCHANGED
+    STATUS_NEEDS_2FA = STATUS_NEEDS_2FA
+    STATUS_RATE_LIMITED = STATUS_RATE_LIMITED
+    STATUS_ERROR_SELECTOR = STATUS_ERROR_SELECTOR
+    STATUS_CODES = STATUS_CODES
+
+    def __init__(self) -> None:
+        self._last_summary: Dict[str, Any] = {
+            "status": self.STATUS_ERROR_SELECTOR,
+            "total_items": 0,
+            "drops_found": [],
+        }
+
+    def set_execution_summary(
+        self,
+        summary: Optional[Dict[str, Any]] = None,
+        status: Optional[str] = None,
+        error: Optional[str] = None,
+    ) -> Dict[str, Any]:
+        """Almacena el resumen o estado actual en la instancia de PriceTracker."""
+        if summary is not None:
+            self._last_summary = dict(summary)
+        elif status is not None:
+            self._last_summary["status"] = status
+        elif error is not None:
+            self._last_summary = {
+                "status": self.resolve_execution_status(0, 0, error),
+                "total_items": 0,
+                "drops_found": [],
+            }
+        return self._last_summary
+
+    def get_execution_summary(self) -> Dict[str, Any]:
+        """Recupera el último resumen registrado en la ejecución."""
+        return dict(self._last_summary)
 
     HISTORY_FIELDS = [
         "product_id",
@@ -207,3 +259,71 @@ class PriceTracker:
                 writer.writerow({field: row.get(field, "") for field in self.HISTORY_FIELDS})
 
         return report_path
+
+    def resolve_execution_status(
+        self, total_items: int, drops_count: int = 0, error: Optional[str] = None
+    ) -> str:
+        """Determina el código de estado estándar según el resultado de extracción."""
+        if error:
+            err_lower = str(error).lower()
+            if any(term in err_lower for term in ("status_needs_2fa", "2fa", "sign-in", "login", "auth")):
+                return self.STATUS_NEEDS_2FA
+            if any(term in err_lower for term in ("rate_limited", "captcha", "robot")):
+                return self.STATUS_RATE_LIMITED
+            if any(term in err_lower for term in ("error_selector", "selector", "artículo", "articulo", "heading")):
+                return self.STATUS_ERROR_SELECTOR
+            return self.STATUS_ERROR_SELECTOR
+
+        if int(total_items) <= 0:
+            return self.STATUS_ERROR_SELECTOR
+
+        if int(drops_count) > 0:
+            return self.STATUS_OK_UPDATED
+
+        return self.STATUS_PRICE_UNCHANGED
+
+    def build_execution_summary(
+        self,
+        total_items: int,
+        drops_found: Optional[List[Dict[str, Any]]] = None,
+        status: Optional[str] = None,
+        error: Optional[str] = None,
+    ) -> Dict[str, Any]:
+        """Construye un diccionario resumen con la estructura esperada: total_items, drops_found, status."""
+        drops = list(drops_found or [])
+        resolved_status = status or self.resolve_execution_status(total_items, len(drops), error)
+        summary = {
+            "total_items": int(total_items),
+            "drops_found": drops,
+            "status": resolved_status,
+        }
+        self._last_summary = dict(summary)
+        return summary
+
+    def save_status_to_json(
+        self,
+        status: Optional[str] = None,
+        total_items: Optional[int] = None,
+        drops_found: Optional[List[Dict[str, Any]]] = None,
+        output_path: str = "results/status.json",
+        extra: Optional[Dict[str, Any]] = None,
+    ) -> Dict[str, Any]:
+        """Escribe el estado y resumen final a results/status.json."""
+        os.makedirs(os.path.dirname(os.path.abspath(output_path)), exist_ok=True)
+        final_status = str(status) if status is not None else self._last_summary.get("status", self.STATUS_ERROR_SELECTOR)
+        count = int(total_items if total_items is not None else self._last_summary.get("total_items", 0))
+        drops = list(drops_found if drops_found is not None else self._last_summary.get("drops_found", []))
+
+        payload: Dict[str, Any] = {
+            "status": final_status,
+            "total_items": count,
+            "drops_found": drops,
+            "timestamp": self.current_timestamp(),
+        }
+        if extra:
+            payload.update(extra)
+
+        with open(output_path, "w", encoding="utf-8") as f:
+            json.dump(payload, f, indent=2, ensure_ascii=False)
+
+        return payload

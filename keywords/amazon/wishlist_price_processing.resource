@@ -1,84 +1,102 @@
 *** Settings ***
-Documentation       Lógica de negocio para consulta, comparación y persistencia de precios Amazon.
+Documentation       Lógica de negocio para consulta, extracción y persistencia de precios Amazon.
+
 Resource            ../../resources/common/settings.resource
 Resource            ../common/system/browser_keywords.resource
 
+
 *** Keywords ***
 Actualizar Wishlist Amazon
-    [Documentation]    Consulta los artículos visibles, compara los precios y conserva un histórico CSV.
-    ${history_path}=    Set Variable    ${CONFIG}[paths][price_history_file]
-    ${history}=         Load Price History    ${history_path}
-    ${items}=    Extraer Articulos Visibles De Wishlist
+    [Documentation]    Extrae artículos visibles, registra sus precios en PriceRepository
+    ...    y retorna un resumen estructurado.
+    [Arguments]    ${items}=${None}
+    @{items_to_process} =    Resolver Items De Wishlist    ${items}
+    VAR    ${total} =    ${0}
+    VAR    @{drops_found} =    @{EMPTY}
+    FOR    ${item}    IN    @{items_to_process}
+        TRY
+            ${drop_record} =    Procesar Articulo En Repositorio    ${item}
+            ${total} =    Evaluate    ${total} + 1
+            IF    $drop_record is not None and $drop_record.get('is_drop')
+                Append To List    ${drops_found}    ${drop_record}
+            END
+        EXCEPT    AS    ${err}
+            Log    Error al procesar articulo en repositorio: ${err}    level=WARN
+        END
+    END
+    ${summary} =    Build Execution Summary    ${total}    drops_found=${drops_found}
+    Log    Resumen de wishlist: ${summary}    level=INFO
+    RETURN    ${summary}
+
+Resolver Items De Wishlist
+    [Documentation]    Obtiene los artículos de los argumentos o los extrae directamente del DOM visible.
+    [Arguments]    ${items}=${None}
+    IF    $items is not None    RETURN    ${items}
+    ${extracted} =    Extraer Articulos Visibles De Wishlist
     ...    ${LOCATORS}[wishlist][item_cards]
     ...    ${LOCATORS}[wishlist][item_title]
     ...    ${LOCATORS}[wishlist][item_link]
     ...    ${LOCATORS}[wishlist][item_price]
     ...    ${LOCATORS}[wishlist][item_availability]
+    RETURN    ${extracted}
 
-    ${found}=    Get Length    ${items}
-    IF    ${found} == 0
-        Fail    [SYSTEM_EXCEPTION] No se encontraron artículos con los selectores configurados.
-    END
-    Log    Se encontraron ${found} artículos visibles en la wishlist.    level=INFO
+Procesar Articulo En Repositorio
+    [Documentation]    Normaliza el precio del artículo y lo registra en SQLite vía PriceRepository.
+    [Arguments]    ${item}
+    ${extracted_info} =    Extraer Campos De Articulo    ${item}
+    ${price_raw} =    Get From Dictionary    ${extracted_info}    raw_price
+    ${normalized} =    Normalize Amazon Price    ${price_raw}
+    ${price_str} =    Get From Dictionary    ${normalized}    price
+    IF    not $price_str    RETURN    ${None}
+    ${repo_item} =    Construir Registro Para Repositorio    ${extracted_info}    ${normalized}
+    ${result} =    Record Price    ${repo_item}
+    Actualizar Metricas Del Articulo    ${result}
+    RETURN    ${result}
 
-    ${records}=    Create List
-    FOR    ${item}    IN    @{items}
-        ${record}=    Procesar Articulo De Wishlist    ${item}    ${history}
-        Append To List    ${records}    ${record}
-    END
+Extraer Campos De Articulo
+    [Documentation]    Extrae nombre, url, precio e identificador soportando diversas convenciones de claves.
+    [Arguments]    ${item}
+    ${name} =    Evaluate    $item.get('product_name') or $item.get('title') or ''
+    ${url} =    Evaluate    $item.get('product_url') or $item.get('url') or ''
+    ${raw_price} =    Evaluate    str($item.get('raw_price') or $item.get('price') or '')
+    ${id} =    Evaluate    $item.get('asin') or $item.get('id') or ''
+    ${asin} =    Extract Asin From Url    ${url}
+    ${final_id} =    Evaluate    $asin or $id or 'UNKNOWN'
+    VAR    &{info} =
+    ...    asin=${final_id}
+    ...    name=${name}
+    ...    url=${url}
+    ...    raw_price=${raw_price}
+    RETURN    ${info}
 
-    ${saved}=    Append Price Records    ${history_path}    ${records}
-    ${report}=   Write Execution Report    ${DATA_OUTPUT_DIR}    ${records}
-    Log    Se persistieron ${saved} registros en '${history_path}'.    level=INFO
-    Log    Reporte de ejecución generado: ${report}    level=INFO
-
-Procesar Articulo De Wishlist
-    [Documentation]    Construye y compara un registro; captura fallas por artículo sin detener el lote.
-    [Arguments]    ${item}    ${history}
-    ${total}=    Evaluate    ${TOTAL_ITEMS} + 1
-    Set Global Variable    ${TOTAL_ITEMS}    ${total}
-
-    ${name}=    Get From Dictionary    ${item}    product_name    default=${EMPTY}
-    ${url}=     Get From Dictionary    ${item}    product_url    default=${EMPTY}
-    ${raw_price}=    Get From Dictionary    ${item}    raw_price    default=${EMPTY}
-    ${availability}=    Get From Dictionary    ${item}    availability    default=${EMPTY}
-
-    TRY
-        ${current}=    Build Price Record    ${EMPTY}    ${name}    ${url}    ${raw_price}    ${availability}
-        ${identifier}=    Get From Dictionary    ${current}    product_id
-        ${previous}=    Get Latest Price Record    ${history}    ${identifier}
-        ${record}=      Compare Price Record    ${current}    ${previous}
-        Actualizar Metricas Del Articulo    ${record}
-        RETURN    ${record}
-    EXCEPT    AS    ${error}
-        ${record}=    Create Error Price Record    ${EMPTY}    ${name}    ${url}    ${error}
-        ${sys}=       Evaluate    ${SYSTEM_EXCEPTIONS} + 1
-        Set Global Variable    ${SYSTEM_EXCEPTIONS}    ${sys}
-        Log    [EXCEPCION DE SISTEMA] Artículo '${name}': ${error}    level=ERROR
-        RETURN    ${record}
-    END
+Construir Registro Para Repositorio
+    [Documentation]    Estructura el diccionario esperado por PriceRepository.record_price.
+    [Arguments]    ${info}    ${normalized}
+    ${asin} =    Get From Dictionary    ${info}    asin
+    ${name} =    Get From Dictionary    ${info}    name
+    ${url} =    Get From Dictionary    ${info}    url
+    ${price_str} =    Get From Dictionary    ${normalized}    price
+    ${curr_raw} =    Get From Dictionary    ${normalized}    currency
+    ${currency} =    Evaluate    $curr_raw or 'MXN'
+    VAR    &{repo_item} =
+    ...    asin=${asin}
+    ...    title=${name}
+    ...    url=${url}
+    ...    current_price=${price_str}
+    ...    currency=${currency}
+    RETURN    ${repo_item}
 
 Actualizar Metricas Del Articulo
-    [Documentation]    Actualiza contadores según el resultado normalizado del precio.
+    [Documentation]    Registra trazas operativas según el resultado de persistencia de PriceRepository.
     [Arguments]    ${record}
-    ${status}=         Get From Dictionary    ${record}    status
-    ${change_type}=    Get From Dictionary    ${record}    price_change_type
-
-    IF    '${status}' == 'OK'
-        ${success}=    Evaluate    ${SUCCESSFUL_ITEMS} + 1
-        Set Global Variable    ${SUCCESSFUL_ITEMS}    ${success}
-    ELSE IF    '${status}' == 'PRICE_NOT_AVAILABLE'
-        ${unavailable}=    Evaluate    ${UNAVAILABLE_ITEMS} + 1
-        Set Global Variable    ${UNAVAILABLE_ITEMS}    ${unavailable}
+    ${asin} =    Get From Dictionary    ${record}    asin
+    ${current} =    Get From Dictionary    ${record}    current_price
+    ${is_drop} =    Get From Dictionary    ${record}    is_drop
+    IF    ${is_drop}
+        ${prev} =    Get From Dictionary    ${record}    previous_price
+        ${pct} =    Get From Dictionary    ${record}    drop_percentage
+        Log    [BAJADA DE PRECIO] ASIN ${asin}: $${prev} -> $${current} (-${pct}%)    level=WARN
+        Run Keyword And Ignore Error    Send Alert    ${record}
     ELSE
-        ${business}=    Evaluate    ${BUSINESS_EXCEPTIONS} + 1
-        Set Global Variable    ${BUSINESS_EXCEPTIONS}    ${business}
-    END
-
-    IF    '${change_type}' == 'DECREASED'
-        ${decreases}=    Evaluate    ${PRICE_DECREASES} + 1
-        Set Global Variable    ${PRICE_DECREASES}    ${decreases}
-    ELSE IF    '${change_type}' == 'INCREASED'
-        ${increases}=    Evaluate    ${PRICE_INCREASES} + 1
-        Set Global Variable    ${PRICE_INCREASES}    ${increases}
+        Log    [PRECIO OBSERVADO] ASIN ${asin}: $${current}    level=INFO
     END

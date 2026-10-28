@@ -4,6 +4,9 @@ log.html
 report.html
 results/
 *.log
+*.db
+*.sqlite
+*.sqlite3
 
 # Data Directories (Exclude runtime & transactional data)
 data/input/*
@@ -44,10 +47,15 @@ wheels/
 # Local overrides (never commit machine-specific config)
 config/local.yaml
 config/*.local.yaml
-!config/local.yaml.example
+!.config/local.yaml.example
 .env
 .env.*
 !.env.example
+
+# Superpowers and test caches
+.superpowers/
+.pytest_cache/
+
 
 # Local agent tooling
 .agents/

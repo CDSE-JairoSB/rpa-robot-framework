@@ -1,0 +1,24 @@
+name: CD Pipeline
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build-and-smoke-test:
+    name: Build & Smoke Check Container Image
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Build Docker image
+        run: |
+          docker build -t rpa-robot-framework:latest .
+
+      - name: Run container smoke check
+        run: |
+          docker run --rm rpa-robot-framework:latest python -c "import robot; print('Robot Framework installed')"
+          docker run --rm rpa-robot-framework:latest robot --version

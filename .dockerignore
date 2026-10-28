@@ -1,0 +1,72 @@
+# Version control
+.git
+.gitignore
+
+# Virtual environments
+.venv
+venv
+env
+ENV
+
+# Python caches and bytecode
+__pycache__
+*.py[cod]
+*$py.class
+*.so
+.Python
+build
+develop-eggs
+dist
+downloads
+eggs
+.eggs
+lib
+lib64
+parts
+sdist
+var
+wheels
+*.egg-info
+.installed.cfg
+*.egg
+
+# Test and quality caches
+.pytest_cache
+.robocop_cache
+.superpowers
+
+# Robot Framework execution artifacts
+results/
+results
+output.xml
+log.html
+report.html
+*.log
+
+# Databases and temporary/local data
+data/temp/*
+!data/temp/.gitkeep
+data/chrome-profile/*
+!data/chrome-profile/.gitkeep
+data/output/*
+!data/output/.gitkeep
+*.db
+*.sqlite
+*.sqlite3
+
+# Local configuration overrides and secrets
+config/local.yaml
+config/*.local.yaml
+.env
+.env.*
+
+# IDE, OS, and agent tooling
+.agents
+.axet-plugin
+.graphify
+.idea
+.vscode
+*.swp
+*.swo
+.DS_Store
+Thumbs.db

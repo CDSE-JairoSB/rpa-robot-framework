@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import io
 import json
+import os
 from typing import Any, Dict
 from unittest.mock import MagicMock, patch
 
@@ -203,9 +204,19 @@ def test_mcp_json_rpc_tools_list():
     assert "check_health" in tool_names
 
 
-def test_mcp_json_rpc_tools_call():
-    """Verifies JSON-RPC 2.0 tools/call execution returns MCP content payload."""
+def test_mcp_default_paths_anchored_to_root_dir():
+    """Verifies default database and status file paths are absolute and anchored to ROOT_DIR."""
     server = WishlistMCPServer()
+    assert os.path.isabs(server.db_path)
+    assert os.path.isabs(server.status_file)
+    assert server.db_path.endswith(os.path.join("data", "prices.db"))
+    assert server.status_file.endswith(os.path.join("results", "status.json"))
+
+
+def test_mcp_json_rpc_tools_call(tmp_path):
+    """Verifies JSON-RPC 2.0 tools/call execution returns MCP content payload."""
+    db_file = tmp_path / "prices.db"
+    server = WishlistMCPServer(db_path=str(db_file))
     request = {
         "jsonrpc": "2.0",
         "id": 3,

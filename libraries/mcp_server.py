@@ -25,9 +25,13 @@ if ROOT_DIR not in sys.path:
 
 from libraries.PriceRepository import PriceRepository
 
+DEFAULT_DB_PATH = os.path.join(ROOT_DIR, "data", "prices.db")
+DEFAULT_STATUS_FILE = os.path.join(ROOT_DIR, "results", "status.json")
+
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
+    stream=sys.stderr,
 )
 logger = logging.getLogger("mcp_server")
 
@@ -60,8 +64,8 @@ class WishlistMCPServer:
 
     def __init__(
         self,
-        db_path: str = "data/prices.db",
-        status_file: str = "results/status.json",
+        db_path: str = DEFAULT_DB_PATH,
+        status_file: str = DEFAULT_STATUS_FILE,
         repository: Optional[PriceRepository] = None,
         runner_callback: Optional[Callable[..., Any]] = None,
         server_name: Optional[str] = None,
@@ -472,13 +476,13 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument(
         "--db-path",
-        default="data/prices.db",
-        help="Path to SQLite prices database (default: data/prices.db)",
+        default=DEFAULT_DB_PATH,
+        help=f"Path to SQLite prices database (default: {DEFAULT_DB_PATH})",
     )
     parser.add_argument(
         "--status-file",
-        default="results/status.json",
-        help="Path to status.json execution file (default: results/status.json)",
+        default=DEFAULT_STATUS_FILE,
+        help=f"Path to status.json execution file (default: {DEFAULT_STATUS_FILE})",
     )
     parser.add_argument(
         "--stdio",

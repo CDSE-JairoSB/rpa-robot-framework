@@ -14,10 +14,14 @@ Actualizar Wishlist Amazon
     VAR    ${total} =    ${0}
     VAR    @{drops_found} =    @{EMPTY}
     FOR    ${item}    IN    @{items_to_process}
-        ${drop_record} =    Procesar Articulo En Repositorio    ${item}
-        ${total} =    Evaluate    ${total} + 1
-        IF    $drop_record is not None and $drop_record.get('is_drop')
-            Append To List    ${drops_found}    ${drop_record}
+        TRY
+            ${drop_record} =    Procesar Articulo En Repositorio    ${item}
+            ${total} =    Evaluate    ${total} + 1
+            IF    $drop_record is not None and $drop_record.get('is_drop')
+                Append To List    ${drops_found}    ${drop_record}
+            END
+        EXCEPT    AS    ${err}
+            Log    Error al procesar articulo en repositorio: ${err}    level=WARN
         END
     END
     ${summary} =    Build Execution Summary    ${total}    drops_found=${drops_found}
@@ -92,6 +96,7 @@ Actualizar Metricas Del Articulo
         ${prev} =    Get From Dictionary    ${record}    previous_price
         ${pct} =    Get From Dictionary    ${record}    drop_percentage
         Log    [BAJADA DE PRECIO] ASIN ${asin}: $${prev} -> $${current} (-${pct}%)    level=WARN
+        Run Keyword And Ignore Error    Send Alert    ${record}
     ELSE
         Log    [PRECIO OBSERVADO] ASIN ${asin}: $${current}    level=INFO
     END

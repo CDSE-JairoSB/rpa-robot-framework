@@ -36,11 +36,11 @@ RUN mkdir -p /app/results /app/data /app/data/temp /app/data/output && \
     chown -R appuser:appuser /app /home/appuser
 
 # Setup entrypoint script supporting both default task execution and arbitrary commands/daemon
-RUN printf '#!/bin/sh\nset -e\nif [ $# -eq 0 ]; then\n  set -- robot --outputdir results tasks/main_process.robot\nelif [ "${1#-}" != "$1" ]; then\n  set -- robot "$@"\nfi\nexec "$@"\n' > /usr/local/bin/entrypoint.sh \
+RUN printf '#!/bin/sh\nset -e\nif [ $# -eq 0 ]; then\n  set -- robot --outputdir results tasks/amazon/wishlist_amazon_price_updater.robot\nelif [ "${1#-}" != "$1" ]; then\n  set -- robot "$@"\nfi\nexec "$@"\n' > /usr/local/bin/entrypoint.sh \
     && chmod +x /usr/local/bin/entrypoint.sh
 
 # Switch to non-root user
 USER appuser
 
 ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
-CMD ["robot", "--outputdir", "results", "tasks/main_process.robot"]
+CMD ["robot", "--outputdir", "results", "tasks/amazon/wishlist_amazon_price_updater.robot"]

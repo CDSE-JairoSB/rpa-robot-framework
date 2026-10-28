@@ -12,6 +12,7 @@ Suite Teardown      Finalizar Suite Wishlist
 
 *** Variables ***
 ${PAGE_HEADING}             id=profile-list-name
+${ITEM_CARD}                css:li.g-item-sortable
 ${ITEM_PRICE}               xpath=//span[contains(@class, 'a-price') and contains(@id, 'itemPrice_')]
 ${BROWSER_TIMEOUT}          20
 ${SCROLL_PAUSE}             2 seconds
@@ -72,6 +73,7 @@ Confirmar Acceso A Wishlist
     ${needs_login} =    Run Keyword And Return Status
     ...    Page Should Contain Element    ${LOGIN_FORM_LOCATOR}
     IF    ${needs_login}
+        Run Keyword And Ignore Error    Send 2fa Alert
         Fail    [STATUS_NEEDS_2FA] Amazon requiere inicio de sesión o verificación 2FA.
     END
     ${is_captcha} =    Run Keyword And Return Status
@@ -100,15 +102,15 @@ Cargar Todos Los Items De Wishlist
     IF    ${previous_count} <= 0
         Fail    [ERROR_SELECTOR] No se cargaron artículos de la Wishlist tras el desplazamiento.
     END
-    Log    Carga por scroll completada. Precios visibles: ${previous_count}    level=INFO
+    Log    Carga por scroll completada. Artículos visibles: ${previous_count}    level=INFO
 
 Scroll Y Evaluar Estabilidad
-    [Documentation]    Realiza un scroll hacia abajo y calcula si el contador de precios se mantuvo estable.
+    [Documentation]    Realiza un scroll hacia abajo y calcula si el contador de artículos se mantuvo estable.
     [Arguments]    ${previous_count}    ${stable_iterations}
-    ${current_count} =    Get Element Count    ${ITEM_PRICE}
+    ${current_count} =    Get Element Count    ${ITEM_CARD}
     Execute JavaScript    window.scrollTo(0, document.body.scrollHeight);
     Sleep    ${SCROLL_PAUSE}
-    ${new_count} =    Get Element Count    ${ITEM_PRICE}
+    ${new_count} =    Get Element Count    ${ITEM_CARD}
     ${is_same} =    Evaluate    ${new_count} == ${previous_count} and ${new_count} == ${current_count}
     ${updated_stable} =    Evaluate    ${stable_iterations} + 1 if ${is_same} else 0
     RETURN    ${new_count}    ${updated_stable}

@@ -154,6 +154,10 @@ def test_mcp_execute_run_wishlist_default_runner():
         assert result["headless"] is False
         assert result["pid"] == 9876
         mock_popen.assert_called_once()
+        cmd = mock_popen.call_args[0][0]
+        assert "--variable" in cmd
+        assert "HEADLESS:false" in cmd
+        assert os.environ.get("CHROME_HEADLESS") == "false"
 
 
 def test_mcp_execute_unknown_tool():

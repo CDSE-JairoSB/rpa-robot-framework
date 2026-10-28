@@ -182,3 +182,19 @@ def test_concurrent_writes(repo):
     assert len(results) == 20
     tracked = repo.get_tracked_items()
     assert len(tracked) == 20
+
+
+def test_currency_default_when_none(repo):
+    item = {
+        "asin": "NOCURR001",
+        "title": "Item with None Currency",
+        "url": "https://amazon.com.mx/dp/NOCURR001",
+        "current_price": "299.00",
+        "currency": None,
+    }
+    result = repo.record_price(item)
+    assert result["currency"] == "MXN"
+    tracked = repo.get_tracked_items()
+    match = [t for t in tracked if t["asin"] == "NOCURR001"]
+    assert len(match) == 1
+    assert match[0]["currency"] == "MXN"

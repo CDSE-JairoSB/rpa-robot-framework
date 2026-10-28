@@ -39,6 +39,7 @@ logger = logging.getLogger("mcp_server")
 def default_task_runner(headless: bool = True) -> subprocess.Popen:
     """Launches the Amazon wishlist Robot Framework task as a background subprocess."""
     robot_task = os.path.join(ROOT_DIR, "tasks", "amazon", "wishlist_amazon_price_updater.robot")
+    os.environ["CHROME_HEADLESS"] = str(headless).lower()
     cmd = [
         sys.executable,
         "-m",
@@ -46,7 +47,7 @@ def default_task_runner(headless: bool = True) -> subprocess.Popen:
         "-d",
         "results",
         "--variable",
-        f"BROWSER_HEADLESS:{str(headless).lower()}",
+        f"HEADLESS:{str(headless).lower()}",
         robot_task,
     ]
     logger.info("Launching default task runner: %s", " ".join(cmd))

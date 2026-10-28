@@ -127,7 +127,7 @@ class PriceRepository:
         asin = str(item["asin"]).strip().upper()
         title = str(item.get("title", "")).strip()
         url = str(item.get("url", "")).strip()
-        currency = str(item.get("currency", "MXN")).strip()
+        currency = str(item.get("currency") or "MXN").strip()
         current_price = self._parse_price(item["current_price"])
 
         now_iso = datetime.now(timezone.utc).replace(microsecond=0).isoformat()

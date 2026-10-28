@@ -11,8 +11,10 @@ Inicializar Navegador
     Set Selenium Timeout    ${timeout} seconds
     ${env_headless}=    Get Environment Variable    CHROME_HEADLESS    default=${EMPTY}
     ${global_headless}=    Get Variable Value    ${HEADLESS}    ${False}
+    ${headless_str}=    Convert To String    ${headless}
+    ${global_headless_str}=    Convert To String    ${global_headless}
     ${effective_headless}=    Evaluate
-    ...    ${headless} or ${global_headless} or '${env_headless}'.lower() in ['true', '1', 'yes']
+    ...    '${headless_str}'.lower() in ['true', '1', 'yes'] or '${global_headless_str}'.lower() in ['true', '1', 'yes'] or '${env_headless}'.lower() in ['true', '1', 'yes']
     Open Available Browser
     ...    ${url}
     ...    browser_selection=chrome
@@ -34,13 +36,14 @@ Inicializar Navegador Con Copia Temporal De Perfil
     ${chrome_binary}=    Resolve Chrome Binary Path    ${binary_override}
     ${env_headless}=    Get Environment Variable    CHROME_HEADLESS    default=${EMPTY}
     ${is_headless}=    Get Variable Value    ${HEADLESS}    ${False}
+    ${is_headless_str}=    Convert To String    ${is_headless}
     @{chrome_args}=    Create List
     ...    --remote-debugging-port\=${debug_port}
     ...    --user-data-dir\=${temporary_root}
     ...    --profile-directory\=${profile_name}
     ...    --no-first-run
     ...    --no-default-browser-check
-    IF    ${is_headless} or '${env_headless}'.lower() in ['true', '1', 'yes']
+    IF    '${is_headless_str}'.lower() in ['true', '1', 'yes'] or '${env_headless}'.lower() in ['true', '1', 'yes']
         Append To List    ${chrome_args}    --headless=new
         Append To List    ${chrome_args}    --disable-gpu
         Append To List    ${chrome_args}    --no-sandbox

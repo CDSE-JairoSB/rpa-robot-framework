@@ -176,7 +176,7 @@ git commit -m "refactor(amazon): switch wishlist scraper to read-only mode with 
 - Consumes: Exception message, page title, page source snippet, and log string.
 - Produces: `classify_error(error_message: str, page_title: str) -> Dict` returning `{ "category": str, "action_code": str, "description": str }`.
 
-- [ ] **Step 1: Write failing test for `ErrorClassifier`**
+- [x] **Step 1: Write failing test for `ErrorClassifier`**
 
 ```python
 # tests/test_error_classifier.py
@@ -211,22 +211,22 @@ def test_classify_generic_selector_failure():
     assert result["category"] == "DOM_DRIFT"
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `pytest tests/test_error_classifier.py -v`
 Expected: FAIL with `ModuleNotFoundError: No module named 'libraries.ErrorClassifier'`
 
-- [ ] **Step 3: Implement `ErrorClassifier` in `libraries/ErrorClassifier.py`**
+- [x] **Step 3: Implement `ErrorClassifier` in `libraries/ErrorClassifier.py`**
 
 - Provide deterministic rule-based regex matching for fast, 0-token classification of common Amazon error states (`Robot Check`, `Sign-In Approval`, `Captcha`, `Element not found`).
 - Include an optional method `triage_with_llm(log_text: str) -> Dict` that calls Gemini Flash with a JSON schema when an unknown error occurs.
 
-- [ ] **Step 4: Run test to verify it passes**
+- [x] **Step 4: Run test to verify it passes**
 
 Run: `pytest tests/test_error_classifier.py -v`
 Expected: PASS
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add libraries/ErrorClassifier.py tests/test_error_classifier.py

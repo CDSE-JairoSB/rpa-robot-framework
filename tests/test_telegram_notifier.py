@@ -50,6 +50,18 @@ def test_format_price_drop_with_minimal_fields():
     assert "$150.00 MXN" in msg
 
 
+def test_format_price_drop_escapes_markdown_title():
+    notifier = TelegramNotifier(bot_token="dummy", chat_id="12345")
+    item = {
+        "title": "[Special Edition_v2] *Bonus*",
+        "current_price": 499.00,
+        "currency": "MXN",
+    }
+    msg = notifier.format_price_drop_message(item)
+    # Ensure markdown delimiters are escaped to prevent Telegram 400 Bad Request
+    assert r"\[Special Edition\_v2] \*Bonus\*" in msg
+
+
 def test_format_status_message():
     notifier = TelegramNotifier(bot_token="dummy", chat_id="12345")
     summary = {
@@ -75,6 +87,11 @@ def test_escape_markdown_and_html():
     assert r"\." in escaped_md
     assert r"\!" in escaped_md
     assert r"\[" in escaped_md
+
+    escaped_v2_backslash = notifier.escape_markdown_v2(r"C:\User\test")
+    assert r"\\" in escaped_v2_backslash
+    escaped_v1_backslash = notifier.escape_markdown(r"C:\User\test")
+    assert r"\\" in escaped_v1_backslash
 
 
 @patch("urllib.request.urlopen")
@@ -188,6 +205,34 @@ def test_bot_service_handle_run_triggers_runner():
     response = bot.handle_run(chat_id="12345", args=[])
     assert "Iniciando" in response or "ejecución" in response.lower()
     assert len(runner_called) == 1
+
+
+def test_bot_service_handle_run_no_runner_configured():
+    bot = TelegramBotService(bot_token="dummy", allowed_chat_ids=["12345"], runner_callback=None)
+    response = bot.handle_run(chat_id="12345", args=[])
+    assert "no disponible" in response.lower() or "no hay un runner" in response.lower()
+
+
+def test_bot_service_handle_run_runner_exception_sanitized():
+    def failing_runner():
+        raise RuntimeError("Crash with [unclosed tag and _delimiters_")
+
+    bot = TelegramBotService(bot_token="dummy", allowed_chat_ids=["12345"], runner_callback=failing_runner)
+    response = bot.handle_run(chat_id="12345", args=[])
+    assert "Error al ejecutar" in response
+    assert r"\[unclosed" in response
+    assert r"\_delimiters\_" in response
+
+
+@patch("subprocess.Popen")
+def test_default_task_runner(mock_popen):
+    from scripts.telegram_bot_service import default_task_runner
+    mock_popen.return_value = MagicMock()
+    proc = default_task_runner()
+    assert mock_popen.called
+    cmd = mock_popen.call_args[0][0]
+    assert "robot" in cmd
+    assert "tasks/amazon/wishlist_amazon_price_updater.robot" in cmd[-1]
 
 
 def test_bot_service_handle_login():

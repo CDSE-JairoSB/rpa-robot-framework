@@ -14,6 +14,7 @@ import json
 import logging
 import os
 import signal
+import subprocess
 import sys
 import time
 from typing import Any, Callable, Dict, List, Optional
@@ -145,10 +146,11 @@ class TelegramBotService:
                     "💡 Utiliza `/run` para iniciar una ejecución desatendida."
                 )
             except Exception as err:
+                sanitized_err = self.notifier.escape_markdown(str(err))
                 msg = (
                     "📊 *Estado de Monitoreo Amazon*\n\n"
                     f"⚠️ Sin ejecuciones recientes registradas.\n"
-                    f"Detalle: {err}"
+                    f"Detalle: {sanitized_err}"
                 )
 
         return msg
@@ -156,19 +158,25 @@ class TelegramBotService:
     def handle_run(self, chat_id: str, args: List[str]) -> str:
         """Dispatches an unattended scraping run."""
         logger.info("Executing /run command requested by chat %s", chat_id)
-        if self.runner_callback:
-            try:
-                result = self.runner_callback()
-                logger.info("Runner callback executed with result: %s", result)
-            except Exception as err:
-                logger.error("Runner callback failed: %s", err)
-                return f"❌ *Error al ejecutar el rastreador:* {err}"
+        if self.runner_callback is None:
+            return (
+                "⚠️ *Ejecución no disponible*\n\n"
+                "No hay un runner de tareas configurado en este servicio de bot. "
+                "Para habilitar ejecuciones automáticas, configure el servicio con un disparador activo."
+            )
 
-        return (
-            "🚀 *Iniciando ejecución de monitoreo de wishlist...*\n\n"
-            "El proceso desatendido ha sido disparado. Al finalizar, "
-            "se registrarán los precios y recibirás alertas si se detectan bajadas."
-        )
+        try:
+            result = self.runner_callback()
+            logger.info("Runner callback executed with result: %s", result)
+            return (
+                "🚀 *Iniciando ejecución de monitoreo de wishlist...*\n\n"
+                "El proceso desatendido ha sido disparado en segundo plano. "
+                "Al finalizar se registrarán los precios y recibirás alertas si se detectan bajadas."
+            )
+        except Exception as err:
+            logger.error("Runner callback failed: %s", err)
+            sanitized_err = self.notifier.escape_markdown(str(err))
+            return f"❌ *Error al ejecutar el rastreador:* {sanitized_err}"
 
     def handle_login(self, chat_id: str, args: List[str]) -> str:
         """Acknowledges decoupled 2FA / interactive re-authentication request."""
@@ -348,6 +356,14 @@ def parse_args() -> argparse.Namespace:
     return parser.parse_args()
 
 
+def default_task_runner() -> subprocess.Popen:
+    """Launches the Amazon wishlist Robot Framework task as a background subprocess."""
+    robot_task = os.path.join(ROOT_DIR, "tasks", "amazon", "wishlist_amazon_price_updater.robot")
+    cmd = [sys.executable, "-m", "robot", "-d", "results", robot_task]
+    logger.info("Launching default task runner: %s", " ".join(cmd))
+    return subprocess.Popen(cmd, cwd=ROOT_DIR)
+
+
 def main() -> None:
     """CLI entry point for running the bot service."""
     args = parse_args()
@@ -358,6 +374,7 @@ def main() -> None:
         allowed_chat_ids=allowed_chats,
         status_file=args.status_file,
         db_path=args.db_path,
+        runner_callback=default_task_runner,
     )
 
     if args.once:

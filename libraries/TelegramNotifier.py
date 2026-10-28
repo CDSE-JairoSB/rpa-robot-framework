@@ -52,12 +52,12 @@ class TelegramNotifier:
     @staticmethod
     def escape_markdown_v2(text: str) -> str:
         """Escapes special characters for Telegram MarkdownV2 mode."""
-        return re.sub(r"([_*\[\]()~`>#+\-=|{}.!])", r"\\\1", str(text))
+        return re.sub(r"([_*\[\]()~`>#+\-=|{}.!\\])", r"\\\1", str(text))
 
     @staticmethod
     def escape_markdown(text: str) -> str:
         """Escapes special characters for Telegram legacy Markdown mode."""
-        return re.sub(r"([_*`\[])", r"\\\1", str(text))
+        return re.sub(r"([_*`\[\\])", r"\\\1", str(text))
 
     def format_price_drop_message(self, item: Dict[str, Any]) -> str:
         """Formats a structured price drop notification message.
@@ -71,6 +71,7 @@ class TelegramNotifier:
             Formatted notification string with Markdown formatting.
         """
         title = str(item.get("title", "Artículo sin título")).strip()
+        escaped_title = self.escape_markdown(title)
         currency = str(item.get("currency", "MXN")).strip()
         current_price = float(item.get("current_price", 0.0))
         previous_price = item.get("previous_price")
@@ -81,7 +82,7 @@ class TelegramNotifier:
         lines = [
             "🔥 *¡Bajada de precio detectada!*",
             "",
-            f"📦 *Producto:* {title}",
+            f"📦 *Producto:* {escaped_title}",
             f"💰 *Precio actual:* ${current_price:,.2f} {currency}",
         ]
 

@@ -26,7 +26,11 @@ WORKDIR /app
 
 # Install project Python dependencies
 COPY requirements.txt /app/requirements.txt
-RUN pip install --no-cache-dir -r requirements.txt
+# gcc and kernel headers are needed temporarily to build evdev from source
+RUN apt-get update && apt-get install -y --no-install-recommends gcc libc6-dev linux-libc-dev \
+    && pip install --no-cache-dir -r requirements.txt \
+    && apt-get purge -y --auto-remove gcc libc6-dev linux-libc-dev \
+    && rm -rf /var/lib/apt/lists/*
 
 # Copy project files
 COPY . /app

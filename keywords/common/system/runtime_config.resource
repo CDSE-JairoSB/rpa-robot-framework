@@ -1,6 +1,8 @@
 *** Settings ***
 Documentation       Resolución de parámetros locales sin versionar secretos ni paths personales.
+
 Resource            ../../../resources/common/settings.resource
+
 
 *** Keywords ***
 Resolver Parametros Locales Amazon
@@ -38,9 +40,17 @@ Resolver Parametros Locales Amazon
     ...    ${profile_path}
     ...    msg=Falta la ruta del perfil Chrome. Use config/local.yaml o --variable AMAZON_CHROME_USER_DATA_DIR.
 
-    Set Global Variable    ${AMAZON_WISHLIST_URL}            ${url}
+    ${binary_path}=    Resolve Runtime Value
+    ...    ${AMAZON_CHROME_BINARY_PATH}
+    ...    AMAZON_CHROME_BINARY_PATH
+    ...    ${local}
+    ...    amazon.chrome_binary_path
+    ...    ${EMPTY}
+
+    Set Global Variable    ${AMAZON_WISHLIST_URL}    ${url}
     Set Global Variable    ${AMAZON_CHROME_USER_DATA_DIR}    ${profile_path}
-    Set Global Variable    ${AMAZON_CHROME_PROFILE_NAME}     ${profile_name}
+    Set Global Variable    ${AMAZON_CHROME_PROFILE_NAME}    ${profile_name}
+    Set Global Variable    ${AMAZON_CHROME_BINARY_PATH}    ${binary_path}
     Log    Parámetros locales resueltos. Perfil Chrome: ${profile_name}    level=INFO
 
 Solicitar Dato Local

@@ -1,6 +1,7 @@
 *** Settings ***
 Documentation       Orquestador RPA para actualizar precios de una wishlist Amazon.
 ...                 Flujo: Tasks -> Business Keywords -> System Keywords -> bibliotecas Python.
+
 Resource            ../resources/common/settings.resource
 Resource            ../keywords/amazon/auth_flow.resource
 Resource            ../keywords/amazon/wishlist_price_processing.resource
@@ -9,6 +10,7 @@ Resource            ../keywords/amazon/wishlist_notification.resource
 
 Suite Setup         Inicializar Proceso RPA
 Suite Teardown      Finalizar Proceso RPA
+
 
 *** Tasks ***
 Actualizar Precios De Wishlist Amazon
@@ -19,6 +21,7 @@ Actualizar Precios De Wishlist Amazon
     ...    ${LOCATORS}[errors][robot_check]
     ...    ${LOCATORS}[errors][page_error]
     Actualizar Wishlist Amazon
+
 
 *** Keywords ***
 Inicializar Proceso RPA

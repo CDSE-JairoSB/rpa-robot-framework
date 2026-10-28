@@ -1,14 +1,17 @@
 *** Settings ***
 Documentation       Sample base: Chrome, navegación, lectura de etiqueta y cierre seguro.
+
 Resource            ../../resources/common/settings.resource
 Resource            ../../keywords/common/system/browser_keywords.resource
 
 Suite Setup         Abrir Sitio De Prueba En Chrome
 Suite Teardown      Cerrar Sesion Del Navegador
 
+
 *** Variables ***
-${SAMPLE_URL}      https://insumoscerveceros.mx/collections/fermentacion
-${PAGE_HEADING}    xpath=(//h1[normalize-space()='Fermentación'])[1]
+${SAMPLE_URL}       https://insumoscerveceros.mx/collections/fermentacion
+${PAGE_HEADING}     xpath=(//h1[normalize-space()='Fermentación'])[1]
+
 
 *** Tasks ***
 Validar Navegacion Y Lectura De Encabezado
@@ -18,6 +21,7 @@ Validar Navegacion Y Lectura De Encabezado
     Should Be Equal    ${heading}    Fermentación
     Log To Console    Encabezado leído correctamente: ${heading}
     Log    Validación de navegación completada. Encabezado: ${heading}    level=INFO
+
 
 *** Keywords ***
 Abrir Sitio De Prueba En Chrome

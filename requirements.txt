@@ -17,3 +17,6 @@ pandas>=2.2.0
 # Code Quality & Standards (Linter & Formatter)
 robotframework-robocop>=5.0.0
 robotframework-tidy>=4.11.0
+
+# Testing & CI Verification
+pytest>=8.0.0

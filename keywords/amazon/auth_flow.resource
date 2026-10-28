@@ -1,8 +1,10 @@
 *** Settings ***
 Documentation       Inicialización segura de sesión operativa para la wishlist Amazon.
+
 Resource            ../../resources/common/settings.resource
 Resource            ../common/system/browser_keywords.resource
 Resource            ../common/system/runtime_config.resource
+
 
 *** Keywords ***
 Cargar Configuracion Y Parametros

@@ -1,0 +1,53 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "rpa-robot-framework"
+version = "0.1.0"
+description = "Autonomous RPA and Price Tracking Platform"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "robotframework>=7.0.0",
+    "rpaframework>=28.0.0",
+    "robotframework-pabot>=2.18.0",
+    "robotframework-requests>=0.9.7",
+    "requests>=2.31.0",
+    "pyyaml>=6.0.1",
+    "openpyxl>=3.1.2",
+    "pandas>=2.2.0",
+    "robotframework-robocop>=5.0.0",
+    "robotframework-tidy>=4.11.0",
+]
+
+[project.optional-dependencies]
+test = [
+    "pytest>=8.0.0",
+]
+lint = [
+    "robotframework-robocop>=5.0.0",
+    "robotframework-tidy>=4.11.0",
+]
+dev = [
+    "pytest>=8.0.0",
+    "robotframework-robocop>=5.0.0",
+    "robotframework-tidy>=4.11.0",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_classes = ["*Test*", "Test*"]
+python_functions = ["test_*"]
+addopts = "-v --tb=short"
+
+[tool.robocop.lint]
+threshold = "E"
+ignore = [
+    "too-many-calls-in-keyword",
+    "line-too-long",
+    "replace-set-variable-with-var",
+    "no-global-variable",
+    "missing-doc-keyword",
+]

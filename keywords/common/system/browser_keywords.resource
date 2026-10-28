@@ -1,18 +1,24 @@
 *** Settings ***
 Documentation       Low-level browser keywords for safe Amazon wishlist extraction.
+
 Resource            ../../../resources/common/settings.resource
+
 
 *** Keywords ***
 Inicializar Navegador
     [Documentation]    Opens a standard browser without reusing a user profile.
     [Arguments]    ${url}    ${headless}=${False}    ${timeout}=15
     Set Selenium Timeout    ${timeout} seconds
+    ${env_headless}=    Get Environment Variable    CHROME_HEADLESS    default=${EMPTY}
+    ${global_headless}=    Get Variable Value    ${HEADLESS}    ${False}
+    ${effective_headless}=    Evaluate
+    ...    ${headless} or ${global_headless} or '${env_headless}'.lower() in ['true', '1', 'yes']
     Open Available Browser
     ...    ${url}
     ...    browser_selection=chrome
-    ...    headless=${headless}
+    ...    headless=${effective_headless}
     ...    maximized=${True}
-    Log    Browser started at URL: ${url} (Headless: ${headless})    level=INFO
+    Log    Browser started at URL: ${url} (Headless: ${effective_headless})    level=INFO
 
 Inicializar Navegador Con Copia Temporal De Perfil
     [Documentation]    Copies a closed Chrome profile to a temporary user-data directory and starts Chrome from that copy.
@@ -24,14 +30,27 @@ Inicializar Navegador Con Copia Temporal De Perfil
     Copy Chrome User Data    ${profile_path}    ${profile_name}    ${temporary_root}
     Set Suite Variable    ${TEMPORARY_CHROME_PROFILE_ROOT}    ${temporary_root}
     ${debug_port}=    Set Variable    9223
-    ${chrome_process}=    Start Process
-    ...    /Applications/Google Chrome.app/Contents/MacOS/Google Chrome
+    ${binary_override}=    Get Variable Value    ${AMAZON_CHROME_BINARY_PATH}    ${EMPTY}
+    ${chrome_binary}=    Resolve Chrome Binary Path    ${binary_override}
+    ${env_headless}=    Get Environment Variable    CHROME_HEADLESS    default=${EMPTY}
+    ${is_headless}=    Get Variable Value    ${HEADLESS}    ${False}
+    @{chrome_args}=    Create List
     ...    --remote-debugging-port\=${debug_port}
     ...    --user-data-dir\=${temporary_root}
     ...    --profile-directory\=${profile_name}
     ...    --no-first-run
     ...    --no-default-browser-check
-    ...    --start-maximized
+    IF    ${is_headless} or '${env_headless}'.lower() in ['true', '1', 'yes']
+        Append To List    ${chrome_args}    --headless=new
+        Append To List    ${chrome_args}    --disable-gpu
+        Append To List    ${chrome_args}    --no-sandbox
+        Append To List    ${chrome_args}    --disable-dev-shm-usage
+    ELSE
+        Append To List    ${chrome_args}    --start-maximized
+    END
+    ${chrome_process}=    Start Process
+    ...    ${chrome_binary}
+    ...    @{chrome_args}
     Set Suite Variable    ${CHROME_PROFILE_PROCESS}    ${chrome_process}
     Process Should Be Running    ${chrome_process}
     Set Selenium Timeout    ${timeout} seconds
@@ -47,13 +66,11 @@ Cerrar Sesion Del Navegador
     [Documentation]    Closes browser sessions, stops a native Chrome process if any, and removes a temporary profile copy.
     Close All Browsers
     ${chrome_process}=    Get Variable Value    ${CHROME_PROFILE_PROCESS}    ${None}
-    Run Keyword If    $chrome_process is not None    Terminate Process    ${chrome_process}
+    IF    $chrome_process is not None    Terminate Process    ${chrome_process}
     ${temporary_root}=    Get Variable Value    ${TEMPORARY_CHROME_PROFILE_ROOT}    ${None}
-    Run Keyword If
-    ...    $temporary_root is not None
-    ...    OperatingSystem.Remove Directory
-    ...    ${temporary_root}
-    ...    recursive=${True}
+    IF    $temporary_root is not None
+        OperatingSystem.Remove Directory    ${temporary_root}    recursive=${True}
+    END
     Log    Browsers closed successfully.    level=INFO
 
 Verificar Acceso A Wishlist Amazon

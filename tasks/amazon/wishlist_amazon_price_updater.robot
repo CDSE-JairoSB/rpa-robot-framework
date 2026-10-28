@@ -1,24 +1,24 @@
 *** Settings ***
-Documentation     Rastrea precios de la Wishlist Amazon en modo solo lectura y persiste en PriceRepository.
+Documentation       Rastrea precios de la Wishlist Amazon en modo solo lectura y persiste en PriceRepository.
 
-Resource          ../../resources/common/settings.resource
-Resource          ../../keywords/common/system/browser_keywords.resource
-Resource          ../../keywords/common/system/runtime_config.resource
-Resource          ../../keywords/amazon/wishlist_price_processing.resource
+Resource            ../../resources/common/settings.resource
+Resource            ../../keywords/common/system/browser_keywords.resource
+Resource            ../../keywords/common/system/runtime_config.resource
+Resource            ../../keywords/amazon/wishlist_price_processing.resource
 
-Suite Setup       Preparar Sesion Amazon Wishlist
-Suite Teardown    Finalizar Suite Wishlist
+Suite Setup         Preparar Sesion Amazon Wishlist
+Suite Teardown      Finalizar Suite Wishlist
 
 
 *** Variables ***
-${PAGE_HEADING}           id=profile-list-name
-${ITEM_PRICE}             xpath=//span[contains(@class, 'a-price') and contains(@id, 'itemPrice_')]
-${BROWSER_TIMEOUT}        20
-${SCROLL_PAUSE}           2 seconds
-${MAX_SCROLL_ATTEMPTS}    20
-${STATUS_FILE_PATH}       results/status.json
-${LOGIN_FORM_LOCATOR}     css:#ap_email, input[type='email'], input[name='email'], #auth-mfa-otpcode
-${CAPTCHA_LOCATOR}        css:#captchacharacters, form[action*='validateCaptcha']
+${PAGE_HEADING}             id=profile-list-name
+${ITEM_PRICE}               xpath=//span[contains(@class, 'a-price') and contains(@id, 'itemPrice_')]
+${BROWSER_TIMEOUT}          20
+${SCROLL_PAUSE}             2 seconds
+${MAX_SCROLL_ATTEMPTS}      20
+${STATUS_FILE_PATH}         results/status.json
+${LOGIN_FORM_LOCATOR}       css:#ap_email, input[type='email'], input[name='email'], #auth-mfa-otpcode
+${CAPTCHA_LOCATOR}          css:#captchacharacters, form[action*='validateCaptcha']
 
 
 *** Tasks ***

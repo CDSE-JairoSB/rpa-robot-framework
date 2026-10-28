@@ -65,23 +65,90 @@ class DataProcessor:
         return self._first_non_empty(cli_value, env_value, local_value, default)
 
     def default_chrome_profile_path(self, profile_name: str = "Default") -> str:
-        """Elige un perfil Chrome usable: copia local del proyecto, luego el de macOS si es legible."""
+        """Elige un perfil Chrome usable: copia local del proyecto, o la ruta estándar según el SO."""
         local_path = os.path.abspath(os.path.join("data", "chrome-profile", profile_name))
-        mac_path = os.path.join(
-            os.path.expanduser("~"),
-            "Library",
-            "Application Support",
-            "Google",
-            "Chrome",
-            profile_name,
-        )
         if self._is_readable_dir(local_path):
             return local_path
-        if self._is_readable_dir(mac_path):
-            return mac_path
+
+        candidates = [
+            # macOS
+            os.path.join(
+                os.path.expanduser("~"),
+                "Library",
+                "Application Support",
+                "Google",
+                "Chrome",
+                profile_name,
+            ),
+            # Linux (standard chrome and chromium paths)
+            os.path.join(os.path.expanduser("~"), ".config", "google-chrome", profile_name),
+            os.path.join(os.path.expanduser("~"), ".config", "chromium", profile_name),
+            # Windows
+            os.path.join(os.environ.get("LOCALAPPDATA", ""), "Google", "Chrome", "User Data", profile_name),
+        ]
+        for candidate in candidates:
+            if candidate and self._is_readable_dir(candidate):
+                return candidate
         if os.path.isdir(local_path):
             return local_path
-        return mac_path if os.path.isdir(mac_path) else ""
+        for candidate in candidates:
+            if candidate and os.path.isdir(candidate):
+                return candidate
+        return ""
+
+    def resolve_chrome_binary_path(self, cli_override: str = "") -> str:
+        """Resuelve el binario ejecutable de Chrome o Chromium (macOS, Linux, Windows).
+
+        Orden de resolución:
+        1. cli_override (CLI o variable de Robot Framework si existe)
+        2. Variables de entorno: CHROME_BINARY_PATH, CHROME_BIN, GOOGLE_CHROME_BIN
+        3. Búsqueda en PATH de ejecutables conocidos (google-chrome, chromium, etc.)
+        4. Rutas estándar del sistema operativo
+        """
+        import shutil
+        import sys
+
+        override = (cli_override or "").strip()
+        if override and (os.path.exists(override) or shutil.which(override)):
+            return override
+
+        for env_var in ("CHROME_BINARY_PATH", "CHROME_BIN", "GOOGLE_CHROME_BIN"):
+            val = os.environ.get(env_var, "").strip()
+            if val and (os.path.exists(val) or shutil.which(val)):
+                return val
+
+        for binary_name in ("google-chrome", "google-chrome-stable", "chromium", "chromium-browser", "chrome"):
+            found = shutil.which(binary_name)
+            if found:
+                return found
+
+        mac_binary = "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"
+        if os.path.exists(mac_binary):
+            return mac_binary
+
+        linux_candidates = [
+            "/usr/bin/google-chrome",
+            "/usr/bin/google-chrome-stable",
+            "/usr/bin/chromium",
+            "/usr/bin/chromium-browser",
+            "/snap/bin/chromium",
+        ]
+        for path in linux_candidates:
+            if os.path.exists(path):
+                return path
+
+        win_candidates = [
+            os.path.expandvars(r"%ProgramFiles%\Google\Chrome\Application\chrome.exe"),
+            os.path.expandvars(r"%ProgramFiles(x86)%\Google\Chrome\Application\chrome.exe"),
+            os.path.expandvars(r"%LocalAppData%\Google\Chrome\Application\chrome.exe"),
+        ]
+        for path in win_candidates:
+            if os.path.exists(path):
+                return path
+
+        if sys.platform == "darwin":
+            return mac_binary
+        return "google-chrome"
 
     def copy_chrome_user_data(self, profile_path: str, profile_name: str, destination_root: str) -> str:
         """Copia el perfil a un user-data-dir temporal. Local State es opcional si macOS lo bloquea."""

@@ -9,6 +9,8 @@ ${AMAZON_WISHLIST_URL}           ${EMPTY}
 ${AMAZON_CHROME_USER_DATA_DIR}   ${EMPTY}
 ${AMAZON_CHROME_PROFILE_NAME}    Default
 ${AMAZON_CHROME_DEBUG_PORT}      ${EMPTY}
+${AMAZON_CHROME_BINARY_PATH}     ${EMPTY}
+${HEADLESS}                      ${False}
 
 # Rutas estándar del proyecto
 ${INPUT_DIR}                     ${CURDIR}${/}..${/}..${/}data${/}input

@@ -4,6 +4,9 @@ log.html
 report.html
 results/
 *.log
+*.db
+*.sqlite
+*.sqlite3
 
 # Data Directories (Exclude runtime & transactional data)
 data/input/*

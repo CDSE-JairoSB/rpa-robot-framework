@@ -21,4 +21,4 @@ jobs:
       - name: Run container smoke check
         run: |
           docker run --rm rpa-robot-framework:latest python -c "import robot; print('Robot Framework installed')"
-          docker run --rm rpa-robot-framework:latest robot --version
+          docker run --rm rpa-robot-framework:latest python -m robot --version || [ $? -eq 251 ]

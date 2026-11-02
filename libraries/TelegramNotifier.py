@@ -175,13 +175,19 @@ class TelegramNotifier:
         }
         icon = status_icons.get(status, "📊")
 
-        return (
-            f"{icon} *Estado de Monitoreo Amazon*\n\n"
-            f"📌 *Código de estado:* `{status}`\n"
-            f"📦 *Total de artículos:* {total_items}\n"
-            f"📉 *Bajadas detectadas:* {drops_count}\n"
-            f"⏱️ *Última actualización:* {timestamp}"
-        )
+        lines = [
+            f"{icon} *Estado de Monitoreo Amazon*",
+            "",
+            f"📌 *Código de estado:* `{status}`",
+            f"📦 *Total de artículos:* {total_items}",
+            f"📉 *Bajadas detectadas:* {drops_count}",
+        ]
+        err_msg = str(summary.get("error", "")).strip()
+        if err_msg:
+            lines.append(f"⚠️ *Detalle:* {self.escape_markdown(err_msg[:200])}")
+        lines.append(f"⏱️ *Última actualización:* {timestamp}")
+
+        return "\n".join(lines)
 
     def send_message(
         self,

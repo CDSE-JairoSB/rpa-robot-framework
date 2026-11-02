@@ -20,6 +20,7 @@ ${MAX_SCROLL_ATTEMPTS}      20
 ${STATUS_FILE_PATH}         results/status.json
 ${LOGIN_FORM_LOCATOR}       css:#ap_email, input[type='email'], input[name='email'], #auth-mfa-otpcode
 ${CAPTCHA_LOCATOR}          css:#captchacharacters, form[action*='validateCaptcha']
+${NOTIFY_ON_EVERY_RUN}      ${True}
 
 
 *** Tasks ***
@@ -43,6 +44,11 @@ Ejecutar Actualizacion De Precios
         ${summary} =    Actualizar Wishlist Amazon    ${items}
         ${status} =    Get From Dictionary    ${summary}    status
         Log To Console    Ejecución completada: ${status} (Total: ${total_items})
+        ${notify_all} =    Get Variable Value    ${NOTIFY_ON_EVERY_RUN}    ${True}
+        ${notify_str} =    Convert To String    ${notify_all}
+        IF    '${notify_str}'.lower() in ['true', '1', 'yes']
+            Run Keyword And Ignore Error    Send Status Alert    ${summary}
+        END
     EXCEPT    AS    ${error}
         Manejar Falla De Ejecucion    ${error}
     END
@@ -53,6 +59,12 @@ Manejar Falla De Ejecucion
     Set Execution Summary    error=${error}
     ${status} =    Resolve Execution Status    0    error=${error}
     Log To Console    Error capturado: ${status} - ${error}
+    ${notify_all} =    Get Variable Value    ${NOTIFY_ON_EVERY_RUN}    ${True}
+    ${notify_str} =    Convert To String    ${notify_all}
+    IF    '${notify_str}'.lower() in ['true', '1', 'yes']
+        VAR    &{err_summary} =    status=${status}    total_items=${0}    drops_found=@{EMPTY}    error=${error}
+        Run Keyword And Ignore Error    Send Status Alert    ${err_summary}
+    END
     Fail    ${error}
 
 Preparar Sesion Amazon Wishlist

@@ -14,6 +14,14 @@ on:
         options:
           - "true"
           - "false"
+      notify_summary:
+        description: "Send status summary to Telegram on completion"
+        required: true
+        default: "true"
+        type: choice
+        options:
+          - "true"
+          - "false"
 
 permissions:
   contents: read
@@ -63,6 +71,7 @@ jobs:
         run: |
           python -m robot \
             --variable HEADLESS:${{ env.HEADLESS }} \
+            --variable NOTIFY_ON_EVERY_RUN:${{ github.event.inputs.notify_summary || 'true' }} \
             --outputdir results \
             tasks/amazon/wishlist_amazon_price_updater.robot
 

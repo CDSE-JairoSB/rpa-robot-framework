@@ -33,12 +33,6 @@ Resolver Parametros Locales Amazon
     ...    ${local}
     ...    amazon.chrome_profile_path
     ...    ${default_profile}
-    IF    $profile_path == ''
-        ${profile_path}=    Solicitar Dato Local    Ruta del perfil Chrome (debe terminar en ${profile_name})
-    END
-    Should Not Be Empty
-    ...    ${profile_path}
-    ...    msg=Falta la ruta del perfil Chrome. Use config/local.yaml o --variable AMAZON_CHROME_USER_DATA_DIR.
 
     ${binary_path}=    Resolve Runtime Value
     ...    ${AMAZON_CHROME_BINARY_PATH}
@@ -51,11 +45,26 @@ Resolver Parametros Locales Amazon
     Set Global Variable    ${AMAZON_CHROME_USER_DATA_DIR}    ${profile_path}
     Set Global Variable    ${AMAZON_CHROME_PROFILE_NAME}    ${profile_name}
     Set Global Variable    ${AMAZON_CHROME_BINARY_PATH}    ${binary_path}
-    Log    Parámetros locales resueltos. Perfil Chrome: ${profile_name}    level=INFO
+    IF    $profile_path != ''
+        Log    Parámetros locales resueltos. Perfil Chrome: ${profile_path}    level=INFO
+    ELSE
+        Log
+        ...    Parámetros locales resueltos. Sin perfil Chrome especificado; se usará sesión limpia aislada.
+        ...    level=INFO
+    END
 
 Solicitar Dato Local
-    [Documentation]    Pide un valor al operador cuando no hay CLI, env ni config/local.yaml.
+    [Documentation]    Pide un valor al operador cuando no hay CLI, env ni config/local.yaml (solo en sesiones interactivas).
     [Arguments]    ${mensaje}
+    ${is_headless}=    Get Variable Value    ${HEADLESS}    ${False}
+    ${env_headless}=    Get Environment Variable    CHROME_HEADLESS    default=${EMPTY}
+    ${is_ci}=    Get Environment Variable    CI    default=${EMPTY}
+    ${is_non_interactive}=    Evaluate
+    ...    str($is_headless).lower() in ['true', '1', 'yes'] or str($env_headless).lower() in ['true', '1', 'yes'] or str($is_ci).lower() in ['true', '1', 'yes']
+    IF    ${is_non_interactive}
+        Fail
+        ...    Entorno desatendido (CI/Headless): Falta configurar '${mensaje}'. Defínalo en variables de entorno, secretos o config/local.yaml.
+    END
     TRY
         ${valor}=    Get Value From User    ${mensaje}
     EXCEPT    AS    ${error}

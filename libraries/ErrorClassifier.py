@@ -17,6 +17,7 @@ from libraries.PriceTracker import (
     STATUS_NEEDS_2FA,
     STATUS_RATE_LIMITED,
 )
+from libraries.TelegramNotifier import get_ssl_context
 
 # Categorías estándar de error (alineadas a buenas prácticas ISTQB y RCA)
 CATEGORY_AUTH_CHALLENGE = "AUTH_CHALLENGE"
@@ -285,7 +286,8 @@ class ErrorClassifier:
             headers={"Content-Type": "application/json"},
             method="POST",
         )
-        with urllib.request.urlopen(req, timeout=15) as resp:
+        ctx = get_ssl_context()
+        with urllib.request.urlopen(req, timeout=15, context=ctx) as resp:
             res_data = json.loads(resp.read().decode("utf-8"))
             candidate = res_data.get("candidates", [{}])[0]
             text = candidate.get("content", {}).get("parts", [{}])[0].get("text", "{}")

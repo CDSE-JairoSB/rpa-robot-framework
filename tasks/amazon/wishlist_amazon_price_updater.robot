@@ -122,10 +122,10 @@ Obtener Items Y Precios De Wishlist
     ...    const cards = document.querySelectorAll("li.g-item-sortable, div.g-item-sortable, [data-itemid]");
     ...    cards.forEach(card => {
     ...    const id = card.getAttribute("data-itemid") || (card.id ? card.id.replace("item_", "") : "");
-    ...    const titleEl = card.querySelector("h2 a, h3 a, a[id*='itemName'], a.a-link-normal");
+    ...    const titleEl = card.querySelector("a[id*='itemName'], a[title], h2 a, h3 a");
     ...    const priceEl = card.querySelector(".a-price .a-offscreen, .itemPrice, [data-testid='price']");
     ...    const linkEl = card.querySelector("a[href*='/dp/'], a[href*='/gp/product/'], h2 a, h3 a");
-    ...    const title = (titleEl?.textContent || "").trim();
+    ...    const title = (titleEl?.getAttribute("title") || titleEl?.textContent || "").trim();
     ...    const price = (priceEl?.textContent || "").trim();
     ...    const url = linkEl?.href || "";
     ...    if (id || url || title) { items.push({ id, title, price, url }); }

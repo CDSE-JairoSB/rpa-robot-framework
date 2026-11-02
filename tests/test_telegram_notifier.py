@@ -123,6 +123,25 @@ def test_send_message_failure_handles_exception(mock_urlopen):
     assert result is False
 
 
+@patch("urllib.request.urlopen")
+def test_send_message_retries_without_parse_mode_on_entity_error(mock_urlopen):
+    # First call fails with 400 bad entities, second call succeeds without parse_mode
+    err_body = b'{"ok":false,"error_code":400,"description":"Bad Request: can\'t parse entities"}'
+    mock_urlopen.side_effect = [
+        urllib.error.HTTPError("https://api.telegram.org", 400, "Bad Request", {}, io := MagicMock()),
+        MagicMock(__enter__=MagicMock(return_value=MagicMock(read=MagicMock(return_value=b'{"ok":true}')))),
+    ]
+    io.read.return_value = err_body
+
+    notifier = TelegramNotifier(bot_token="test_token", chat_id="12345")
+    result = notifier.send_message("Mensaje con _formato_roto", parse_mode="Markdown")
+    assert result is True
+    assert mock_urlopen.call_count == 2
+    # Verify second call removed parse_mode from json payload
+    second_call_data = json.loads(mock_urlopen.call_args_list[1][0][0].data.decode("utf-8"))
+    assert "parse_mode" not in second_call_data
+
+
 def test_send_message_missing_credentials():
     notifier = TelegramNotifier(bot_token="", chat_id="")
     result = notifier.send_message("Test")

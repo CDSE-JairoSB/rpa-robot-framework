@@ -24,12 +24,22 @@ Inicializar Navegador
 
 Inicializar Navegador Con Copia Temporal De Perfil
     [Documentation]    Copies a closed Chrome profile to a temporary user-data directory and starts Chrome from that copy.
-    [Arguments]    ${url}    ${profile_path}    ${profile_name}=Default    ${timeout}=20
-    Should Not Be Empty    ${profile_path}    msg=Provide the Chrome profile directory to copy.
-    Directory Should Exist    ${profile_path}
+    [Arguments]    ${url}    ${profile_path}=${EMPTY}    ${profile_name}=Default    ${timeout}=20
     ${timestamp}=    Get Current Date    result_format=%Y%m%d_%H%M%S
     ${temporary_root}=    Set Variable    ${TEMP_DIR}${/}chrome_profile_${profile_name}_${timestamp}
-    Copy Chrome User Data    ${profile_path}    ${profile_name}    ${temporary_root}
+    ${has_profile}=    Evaluate    bool($profile_path and str($profile_path).strip())
+    ${profile_exists}=    Run Keyword And Return Status    Directory Should Exist    ${profile_path}
+    IF    ${has_profile} and ${profile_exists}
+        TRY
+            Copy Chrome User Data    ${profile_path}    ${profile_name}    ${temporary_root}
+            Log    Perfil '${profile_name}' copiado a '${temporary_root}'.    level=INFO
+        EXCEPT    AS    ${copy_err}
+            Log    No se pudo copiar el perfil (${copy_err}). Iniciando con perfil temporal limpio.    level=WARN
+            OperatingSystem.Create Directory    ${temporary_root}
+        END
+    ELSE
+        OperatingSystem.Create Directory    ${temporary_root}
+    END
     Set Suite Variable    ${TEMPORARY_CHROME_PROFILE_ROOT}    ${temporary_root}
     ${debug_port}=    Set Variable    9223
     ${binary_override}=    Get Variable Value    ${AMAZON_CHROME_BINARY_PATH}    ${EMPTY}

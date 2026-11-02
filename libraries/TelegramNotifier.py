@@ -12,11 +12,24 @@ import json
 import logging
 import os
 import re
+import ssl
 from typing import Any, Dict, Optional
 import urllib.error
 import urllib.request
 
 logger = logging.getLogger(__name__)
+
+
+def get_ssl_context() -> Optional[ssl.SSLContext]:
+    """Builds a secure SSL context using certifi CA bundle if available."""
+    try:
+        import certifi
+        return ssl.create_default_context(cafile=certifi.where())
+    except Exception:
+        try:
+            return ssl.create_default_context()
+        except Exception:
+            return None
 
 
 class TelegramNotifier:
@@ -30,19 +43,36 @@ class TelegramNotifier:
         chat_id: Optional[str] = None,
         base_url: str = "https://api.telegram.org",
         timeout: int = 15,
+        config_path: str = "config/local.yaml",
     ) -> None:
         """Initializes the Telegram notifier.
 
         Args:
-            bot_token: Telegram bot token. Falls back to TELEGRAM_BOT_TOKEN env var.
-            chat_id: Telegram chat ID. Falls back to TELEGRAM_CHAT_ID env var.
+            bot_token: Telegram bot token. Falls back to TELEGRAM_BOT_TOKEN env var or config/local.yaml.
+            chat_id: Telegram chat ID. Falls back to TELEGRAM_CHAT_ID env var or config/local.yaml.
             base_url: Base Telegram Bot API endpoint.
             timeout: HTTP request timeout in seconds.
+            config_path: Optional path to config/local.yaml for credential fallback.
         """
         self.bot_token = bot_token or os.environ.get("TELEGRAM_BOT_TOKEN", "")
         self.chat_id = str(chat_id) if chat_id is not None else os.environ.get("TELEGRAM_CHAT_ID", "")
         self.base_url = base_url.rstrip("/")
         self.timeout = timeout
+
+        if (not self.bot_token or not self.chat_id) and os.path.exists(config_path):
+            try:
+                import yaml
+                with open(config_path, "r", encoding="utf-8") as f:
+                    cfg = yaml.safe_load(f) or {}
+                if isinstance(cfg, dict):
+                    tg = cfg.get("telegram", {})
+                    if isinstance(tg, dict):
+                        if not self.bot_token:
+                            self.bot_token = str(tg.get("bot_token") or "")
+                        if not self.chat_id:
+                            self.chat_id = str(tg.get("chat_id") or "")
+            except Exception as e:
+                logger.debug("Could not read local config for telegram credentials: %s", e)
 
     @staticmethod
     def escape_html(text: str) -> str:
@@ -96,8 +126,10 @@ class TelegramNotifier:
 
         lines.append(f"📉 *Descuento:* {drop_pct:.1f}%")
 
-        if url:
-            lines.append(f"🔗 *Enlace:* {url}")
+        asin = str(item.get("asin", "")).strip()
+        canonical_url = f"https://www.amazon.com.mx/dp/{asin}" if asin and asin != "UNKNOWN" else url
+        if canonical_url:
+            lines.append(f"🔗 *Enlace:* [Ver en Amazon]({canonical_url})")
 
         return "\n".join(lines)
 
@@ -194,16 +226,22 @@ class TelegramNotifier:
         )
 
         try:
-            with urllib.request.urlopen(req, timeout=self.timeout) as resp:
+            ctx = get_ssl_context()
+            with urllib.request.urlopen(req, timeout=self.timeout, context=ctx) as resp:
                 body = resp.read().decode("utf-8")
                 res = json.loads(body)
                 return bool(res.get("ok", False))
         except urllib.error.HTTPError as http_err:
-            logger.error(
-                "Telegram API HTTP error %d: %s",
-                http_err.code,
-                http_err.read().decode("utf-8", errors="ignore"),
-            )
+            err_body = http_err.read().decode("utf-8", errors="ignore")
+            logger.error("Telegram API HTTP error %d: %s", http_err.code, err_body)
+            if http_err.code == 400 and parse_mode and "can't parse entities" in err_body:
+                logger.info("Retrying Telegram message delivery without parse_mode...")
+                return self.send_message(
+                    text=text,
+                    chat_id=target_chat_id,
+                    parse_mode=None,
+                    disable_web_page_preview=disable_web_page_preview,
+                )
             return False
         except Exception as err:
             logger.error("Error sending Telegram message: %s", err)

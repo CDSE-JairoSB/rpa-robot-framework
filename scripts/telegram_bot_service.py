@@ -28,7 +28,7 @@ if ROOT_DIR not in sys.path:
     sys.path.insert(0, ROOT_DIR)
 
 from libraries.PriceRepository import PriceRepository
-from libraries.TelegramNotifier import TelegramNotifier
+from libraries.TelegramNotifier import TelegramNotifier, get_ssl_context
 
 logging.basicConfig(
     level=logging.INFO,
@@ -247,7 +247,8 @@ class TelegramBotService:
         req = urllib.request.Request(url, headers={"User-Agent": "AutonomousRPA-Bot/1.0"})
 
         try:
-            with urllib.request.urlopen(req, timeout=timeout + 10) as resp:
+            ctx = get_ssl_context()
+            with urllib.request.urlopen(req, timeout=timeout + 10, context=ctx) as resp:
                 data = json.loads(resp.read().decode("utf-8"))
                 if data.get("ok"):
                     return data.get("result", [])
@@ -364,13 +365,36 @@ def default_task_runner() -> subprocess.Popen:
     return subprocess.Popen(cmd, cwd=ROOT_DIR)
 
 
+def load_local_telegram_config(config_path: str = "config/local.yaml") -> Dict[str, str]:
+    """Reads telegram credentials from config/local.yaml if present."""
+    if not os.path.exists(config_path):
+        return {}
+    try:
+        import yaml
+        with open(config_path, "r", encoding="utf-8") as f:
+            cfg = yaml.safe_load(f) or {}
+        if isinstance(cfg, dict):
+            tg = cfg.get("telegram", {})
+            if isinstance(tg, dict):
+                return {
+                    "bot_token": str(tg.get("bot_token") or ""),
+                    "chat_id": str(tg.get("chat_id") or ""),
+                }
+    except Exception as e:
+        logger.debug("Failed reading %s: %s", config_path, e)
+    return {}
+
+
 def main() -> None:
     """CLI entry point for running the bot service."""
     args = parse_args()
-    allowed_chats = [c.strip() for c in args.chat_id.split(",")] if args.chat_id else []
+    local_tg = load_local_telegram_config()
+    bot_token = args.bot_token or local_tg.get("bot_token")
+    raw_chat_id = args.chat_id or local_tg.get("chat_id")
+    allowed_chats = [c.strip() for c in raw_chat_id.split(",")] if raw_chat_id else []
 
     service = TelegramBotService(
-        bot_token=args.bot_token,
+        bot_token=bot_token,
         allowed_chat_ids=allowed_chats,
         status_file=args.status_file,
         db_path=args.db_path,

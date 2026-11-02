@@ -1,0 +1,84 @@
+name: Scheduled Wishlist Price Tracker
+
+on:
+  schedule:
+    # Runs every 6 hours (00:00, 06:00, 12:00, 18:00 UTC)
+    - cron: "0 */6 * * *"
+  workflow_dispatch:
+    inputs:
+      headless:
+        description: "Run browser in headless mode"
+        required: true
+        default: "true"
+        type: choice
+        options:
+          - "true"
+          - "false"
+
+permissions:
+  contents: read
+
+jobs:
+  track-prices:
+    name: Execute Wishlist Price Scraper
+    runs-on: ubuntu-latest
+
+    env:
+      CHROME_HEADLESS: "true"
+      HEADLESS: ${{ github.event.inputs.headless || 'true' }}
+      TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+      TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+      AMAZON_WISHLIST_URL: ${{ secrets.AMAZON_WISHLIST_URL }}
+      GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: "pip"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Restore Price Database from Cache
+        uses: actions/cache/restore@v4
+        id: db-cache
+        with:
+          path: data/prices.db
+          key: prices-db-${{ github.run_id }}
+          restore-keys: |
+            prices-db-
+
+      - name: Ensure runtime directories exist
+        run: |
+          mkdir -p data results
+
+      - name: Run Robot Framework Price Updater
+        run: |
+          python -m robot \
+            --variable HEADLESS:${{ env.HEADLESS }} \
+            --outputdir results \
+            tasks/amazon/wishlist_amazon_price_updater.robot
+
+      - name: Save Updated Price Database to Cache
+        uses: actions/cache/save@v4
+        if: always()
+        with:
+          path: data/prices.db
+          key: prices-db-${{ github.run_id }}
+
+      - name: Upload Execution Reports & Logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: execution-results-run-${{ github.run_number }}
+          path: |
+            results/
+            data/prices.db
+          retention-days: 14

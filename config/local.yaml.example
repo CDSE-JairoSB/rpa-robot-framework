@@ -5,3 +5,7 @@ amazon:
   wishlist_url: ""
   chrome_profile_path: ""
   chrome_profile_name: "Default"
+
+telegram:
+  bot_token: ""
+  chat_id: ""
